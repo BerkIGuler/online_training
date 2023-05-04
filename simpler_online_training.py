@@ -1,10 +1,10 @@
-from train import train
 import argparse
 import logging
 import os
 from pathlib import Path
-
 import yaml
+
+from train import train
 from utils.general import (
     increment_path,
     check_file,
