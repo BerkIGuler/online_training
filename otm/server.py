@@ -3,12 +3,12 @@ import os
 import zipfile
 import tarfile
 
-
+# Discarded variables
 # Global Variables
-HOST = "192.168.0.0"
-PORT = 65432
-receive_file_name = "received.zip"
-folder_path = "./sent_model"
+# HOST = "192.168.0.0"
+# PORT = 65432
+# receive_file_name = "received.zip"
+# folder_path = "./sent_model"
 
 
 class TarDir:
@@ -64,11 +64,12 @@ def send(folder_path, client_socket):
 
 class TCPServer:
 
-    def __init__(self, host, port, folder_path):
+    def __init__(self, host, port, folder_path, receive_file_name):
         self.host = host
         self.port = port
         self.folder_path = folder_path
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.receive_file_name = receive_file_name
 
     def start(self):
         self.server_socket.bind((self.host, self.port))
@@ -82,10 +83,10 @@ class TCPServer:
         data = client_socket.recv(10240)
 
         if data.decode() == 'q':
-            receive(receive_file_name, client_socket)
+            receive(self.receive_file_name, client_socket)
 
         elif data.decode() == 'm':
-            send(folder_path, client_socket)
+            send(self.folder_path, client_socket)
 
         else:
             print('Invalid input received from client')
@@ -95,8 +96,9 @@ class TCPServer:
         print("Server closed.")
 
 
-def main():
-    server = TCPServer(HOST, PORT, folder_path)
+def main(HOST, PORT, folder_path, receive_file_name):
+
+    server = TCPServer(HOST, PORT, folder_path, receive_file_name)
     server.start()
     server.serve()
     server.close()

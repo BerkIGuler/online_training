@@ -11,7 +11,7 @@ from utils.general import (
     set_logging)
 from utils.torch_utils import select_device
 from otm.utils import folder_cleaner_coco, file_mover_coco, file_sampler_coco, file_copier_coco
-from otm.server import TCPServer
+import otm.server
 
 logger = logging.getLogger(__name__)
 
@@ -41,13 +41,11 @@ def online_training(hyp, opt, device):
         file_sampler_coco(dataset_dir, temp_dir, replay_file_nb)
         final_model_path, _ = train(hyp, opt, device, tb_writer=None)
         # print(final_model_path)
-        # Server codes below.
-        """
-        server2 = TCPServer(host='169.254.153.152', port=65432, folder_path=final_model_path)
-        server2.start()
-        server2.serve()
-        server2.close()
-        """
+
+        # Server code
+        otm.server.main(host='169.254.153.152', port=65432, folder_path=final_model_path,
+                        receive_file_name="received.zip")
+
         file_mover_coco(incoming_dir, dataset_dir)
         folder_cleaner_coco(temp_dir)
 
