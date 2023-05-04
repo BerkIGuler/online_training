@@ -37,15 +37,17 @@ def online_training(hyp, opt, device):
     threshold = opt.threshold
 
     if files_count > threshold:
-        file_copier_coco(incoming_dir,temp_dir)
+        file_copier_coco(incoming_dir, temp_dir)
         file_sampler_coco(dataset_dir, temp_dir, replay_file_nb)
-        final_model_path, _ = train(hyp, opt, device,tb_writer=None)
-        #print(final_model_path)
-
+        final_model_path, _ = train(hyp, opt, device, tb_writer=None)
+        # print(final_model_path)
+        # Server codes below.
+        """
         server2 = TCPServer(host='169.254.153.152', port=65432, folder_path=final_model_path)
         server2.start()
         server2.serve()
         server2.close()
+        """
         file_mover_coco(incoming_dir, dataset_dir)
         folder_cleaner_coco(temp_dir)
 
@@ -60,7 +62,7 @@ if __name__ == '__main__':
         default='./otm/incoming_folder')
     parser.add_argument(
         '--replay_sample_nb', type=int,
-        default=100, help="give number of samples to use for replay" )
+        default=100, help="give number of samples to use for replay")
     parser.add_argument(
         '--temp_path', type=str,
         default='./otm/temp_folder')
@@ -80,6 +82,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--batch-size', type=int,
         default=16, help='total batch size for all GPUs')
+    parser.add_argument(
+        '--total_batch_size', type=int,
+        default=32, help='Total batch size')
     parser.add_argument(
         '--img-size', nargs='+', type=int,
         default=[640, 640], help='[train, test] image sizes')
@@ -115,7 +120,8 @@ if __name__ == '__main__':
     parser.add_argument('--bbox_interval', type=int, default=-1, help='Set bounding-box image logging interval for W&B')
     parser.add_argument('--save_period', type=int, default=-1, help='Log model after every "save_period" epoch')
     parser.add_argument('--artifact_alias', type=str, default="latest", help='version of dataset artifact to be used')
-    parser.add_argument('--freeze', nargs='+', type=int, default=[0], help='Freeze layers: backbone of yolov7=50, first3=0 1 2')
+    parser.add_argument('--freeze', nargs='+', type=int, default=[0],
+                        help='Freeze layers: backbone of yolov7=50, first3=0 1 2')
     parser.add_argument('--v5-metric', action='store_true', help='assume maximum recall as 1.0 in AP calculation')
 
     opt = parser.parse_args()
