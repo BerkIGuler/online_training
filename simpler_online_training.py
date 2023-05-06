@@ -37,18 +37,28 @@ def online_training(hyp, opt, device):
     print(files_count)
 
     if files_count > threshold:
+        print(f"starting training with f{files_count} files.")
         file_copier_coco(incoming_dir, temp_dir)
         file_sampler_coco(dataset_dir, temp_dir, replay_file_nb)
         final_model_path, _ = train(hyp, opt, device, tb_writer=None)
-
-        # Server codes below.
-        server2 = TCPServer(host='169.254.153.152', port=65432, folder_path=final_model_path)
-        server2.start()
-        server2.serve()
-        server2.close()
-
         file_mover_coco(incoming_dir, dataset_dir)
         folder_cleaner_coco(temp_dir)
+
+    else:
+        print(f"There are {files_count} files yet need "
+              f"{threshold - files_count} more to start training")
+
+
+def main(hyp, opt, device):
+    while True:
+        # start listening for requests
+        server2 = TCPServer(host='169.254.153.152', port=65432, folder_path=final_model_path)
+        server2.start()
+        message = server2.serve()
+        if message == "r":
+            # new files received start training if enough files
+            online_training(hyp, opt, device)
+
 
 
 if __name__ == '__main__':
@@ -144,4 +154,9 @@ if __name__ == '__main__':
     # Train
     logger.info(opt)
     device = select_device(opt.device, batch_size=opt.batch_size)
+
+
+
+
+    main()
     online_training(hyp, opt, device)
