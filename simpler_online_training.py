@@ -52,8 +52,12 @@ def online_training(hyp, opt, device):
 def main(hyp, opt, device):
     while True:
         # start listening for requests
-        otm.server.main(host='169.254.153.152', port=65432, folder_path=final_model_path,
-                        receive_file_name="received.zip")
+        message = otm.server.main(
+            host='169.254.153.152',
+            port=65432,
+            folder_path=final_model_path,
+            receive_file_name="received.zip")
+
         if message == "r":
             # new files received start training if enough files
             online_training(hyp, opt, device)

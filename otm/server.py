@@ -3,13 +3,6 @@ import os
 import zipfile
 import tarfile
 
-# Discarded variables
-# Global Variables
-# HOST = "192.168.0.0"
-# PORT = 65432
-# receive_file_name = "received.zip"
-# folder_path = "./sent_model"
-
 
 class TarDir:
     def __init__(self, tar_file_name, dir_path):
@@ -83,17 +76,14 @@ class TCPServer:
         data = client_socket.recv(10240)
 
         if data.decode() == 'r':
-            receive(receive_file_name, client_socket)
+            receive(self.receive_file_name, client_socket)
             return "r"
 
         elif data.decode() == 's':
             send(self.folder_path, client_socket)
-            return "s"
-
 
         else:
             print('Invalid input received from client')
-            return "error"
 
     def close(self):
         self.server_socket.close()
