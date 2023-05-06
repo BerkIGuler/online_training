@@ -29,25 +29,24 @@ def online_training(hyp, opt, device):
     incoming_dir = opt.stream_path
     temp_dir = opt.temp_path  # used for training
     replay_file_nb = opt.replay_sample_nb  # num samples to select from memory
+    threshold = opt.threshold
 
     files_list = [f for f in os.listdir(incoming_dir + "/labels")]
     # Get the count of files in the directory
     files_count = len(files_list)
     print(files_count)
-    threshold = opt.threshold
 
     if files_count > threshold:
         file_copier_coco(incoming_dir, temp_dir)
         file_sampler_coco(dataset_dir, temp_dir, replay_file_nb)
         final_model_path, _ = train(hyp, opt, device, tb_writer=None)
-        # print(final_model_path)
+
         # Server codes below.
-        """
         server2 = TCPServer(host='169.254.153.152', port=65432, folder_path=final_model_path)
         server2.start()
         server2.serve()
         server2.close()
-        """
+
         file_mover_coco(incoming_dir, dataset_dir)
         folder_cleaner_coco(temp_dir)
 

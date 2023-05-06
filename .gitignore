@@ -6,11 +6,14 @@
 *.jpeg
 *.jpg
 
+# pycharm
+.idea/
 # coco labels
 *.txt
 
 # model_files
 *.pt
+*.zip
 
 # pycharm files
 *.iml
