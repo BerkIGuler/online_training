@@ -66,11 +66,10 @@ class TCPServer:
 
     def start(self):
         self.server_socket.bind((self.host, self.port))
-        self.server_socket.listen(1)
-        print(self.folder_path)
-        print(f"Server listening on {self.host}:{self.port}")
 
     def serve(self):
+        self.server_socket.listen(1)
+        print(f"Server listening on {self.host}:{self.port}")
         client_socket, client_address = self.server_socket.accept()
         print(f'Client {client_address} connected')
         data = client_socket.recv(10240)
@@ -88,15 +87,3 @@ class TCPServer:
     def close(self):
         self.server_socket.close()
         print("Server closed.")
-
-
-def main(HOST, PORT, folder_path, receive_file_name):
-
-    server = TCPServer(HOST, PORT, folder_path, receive_file_name)
-    server.start()
-    server.serve()
-    server.close()
-
-
-if __name__ == '__main__':
-    main()

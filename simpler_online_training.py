@@ -10,10 +10,16 @@ from utils.general import (
     check_file,
     set_logging)
 from utils.torch_utils import select_device
+
 from otm.utils import folder_cleaner_coco, file_mover_coco, file_sampler_coco, file_copier_coco
-import otm.server
+from otm.server import TCPServer
+from otm.file_operations import zip_to_ims
 
 logger = logging.getLogger(__name__)
+
+RECEIVE_FILE_NAME = "received.zip"
+MODEL_SENT_PATH = "./otm/sent_model"
+TARGET_PATH = "otm/incoming_folder"
 
 
 def online_training(hyp, opt, device):
@@ -37,7 +43,7 @@ def online_training(hyp, opt, device):
     print(files_count)
 
     if files_count > threshold:
-        print(f"starting training with f{files_count} files.")
+        print(f"starting training with {files_count} files.")
         file_copier_coco(incoming_dir, temp_dir)
         file_sampler_coco(dataset_dir, temp_dir, replay_file_nb)
         final_model_path, _ = train(hyp, opt, device, tb_writer=None)
@@ -50,22 +56,32 @@ def online_training(hyp, opt, device):
 
 
 def main(hyp, opt, device):
+    server = TCPServer(
+        host=opt.host_ip,
+        port=opt.port,
+        folder_path=MODEL_SENT_PATH,
+        receive_file_name=RECEIVE_FILE_NAME)
+    server.start()
     while True:
         # start listening for requests
-        message = otm.server.main(
-            host='169.254.153.152',
-            port=65432,
-            folder_path=final_model_path,
-            receive_file_name="received.zip")
+        message = server.serve()
 
         if message == "r":
             # new files received start training if enough files
+            zip_to_ims(RECEIVE_FILE_NAME, TARGET_PATH)
             online_training(hyp, opt, device)
-
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-p", '--port', type=int,
+        required=True,
+        help="serving port")
+    parser.add_argument(
+        "-i", '--host_ip', type=str,
+        required=True,
+        help="serving ip")
     parser.add_argument(
         '--memory_path', type=str,
         default='./otm/custom_dataset/train')
@@ -86,13 +102,13 @@ if __name__ == '__main__':
         default=300)
     parser.add_argument(
         '--weights', type=str,
-        default='./otm/base_weights/yolo7.pt',
+        default='/home/tubitak/Desktop/online_training/otm/base_weights/yolov7.pt',
         help='initial weights path')
     parser.add_argument(
         '--threshold', type=int, default=10,
         help='minimum file number to start training')
     parser.add_argument(
-        '--batch-size', type=int,
+        '--batch_size', type=int,
         default=16, help='total batch size for all GPUs')
     parser.add_argument(
         '--total_batch_size', type=int,
@@ -158,8 +174,4 @@ if __name__ == '__main__':
     logger.info(opt)
     device = select_device(opt.device, batch_size=opt.batch_size)
 
-
-
-
-    main()
-    online_training(hyp, opt, device)
+    main(hyp, opt, device)
