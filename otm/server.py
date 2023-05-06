@@ -81,14 +81,17 @@ class TCPServer:
         print(f'Client {client_address} connected')
         data = client_socket.recv(10240)
 
-        if data.decode() == 'q':
+        if data.decode() == 'r':
             receive(receive_file_name, client_socket)
+            return "r"
 
-        elif data.decode() == 'm':
+        elif data.decode() == 's':
             send(folder_path, client_socket)
+            return "s"
 
         else:
             print('Invalid input received from client')
+            return "error"
 
     def close(self):
         self.server_socket.close()
