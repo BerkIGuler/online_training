@@ -11,9 +11,15 @@
 # coco labels
 *.txt
 
+# cache
+*.cache
+
 # model_files
 *.pt
 *.zip
+
+# training logs
+runs/
 
 # pycharm files
 *.iml

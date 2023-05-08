@@ -2,7 +2,9 @@ import os
 import shutil
 import random
 import itertools
-import zipfile
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def folder_cleaner(folder_path):
@@ -13,7 +15,7 @@ def folder_cleaner(folder_path):
             if os.path.isfile(file_path):
                 os.unlink(file_path)
         except Exception as e:
-            print(f"Error deleting file: {file_path} - {e}")
+            logger.error(f"Error deleting file: {file_path} - {e}")
 
 
 def folder_cleaner_coco(folder_path):
@@ -31,12 +33,18 @@ def file_mover_coco(source_dir, dest_dir):
     for f in files_images:
         src_path = os.path.join(source_dir + "/images", f)
         dest_path = os.path.join(dest_dir + "/images")
-        shutil.move(src_path, dest_path)
+        try:
+            shutil.move(src_path, dest_path)
+        except shutil.Error:
+            continue
 
     for f in files_labels:
         src_path = os.path.join(source_dir + "/labels", f)
         dest_path = os.path.join(dest_dir + "/labels")
-        shutil.move(src_path, dest_path)
+        try:
+            shutil.move(src_path, dest_path)
+        except shutil.Error:
+            continue
 
 
 def file_sampler_coco(source_dir, dest_dir, file_nb):

@@ -3,6 +3,7 @@ import logging
 import os
 from pathlib import Path
 import yaml
+import torch
 
 from train import train
 from utils.general import (
@@ -13,7 +14,10 @@ from utils.torch_utils import select_device
 
 from otm.utils import folder_cleaner_coco, file_mover_coco, file_sampler_coco, file_copier_coco
 from otm.server import TCPServer
-from otm.file_operations import zip_to_ims
+from otm.file_operations import zip_to_ims, arrange_model_files_after_training
+
+import gc
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,17 +47,23 @@ def online_training(hyp, opt, device):
     # Get the count of files in the directory
     files_count = len(files_list)
 
-    if files_count > threshold:
-        print(f"starting training with {files_count} files.")
+    if replay_file_nb == 0:
+        replay_file_nb = files_count
+
+    if files_count >= threshold:
+        logger.info(f"starting training with {files_count} files.")
+        # move files to temp_dir for training
         file_copier_coco(incoming_dir, temp_dir)
         file_sampler_coco(dataset_dir, temp_dir, replay_file_nb)
         results = train(hyp, opt, device, tb_writer=None)
+        # arrange files after training
         file_mover_coco(incoming_dir, dataset_dir)
         folder_cleaner_coco(temp_dir)
+        arrange_model_files_after_training()
 
     else:
-        print(f"There are {files_count} files yet need "
-              f"{threshold - files_count} more to start training")
+        logger.info(f"There are {files_count} files yet need " \
+                    + f"{threshold - files_count} more to start training")
 
 
 def main(hyp, opt, device):
@@ -71,6 +81,9 @@ def main(hyp, opt, device):
             # new files received start training if enough files
             zip_to_ims(RECEIVE_FILE_NAME, TARGET_PATH)
             online_training(hyp, opt, device)
+            # free gpu memory
+            torch.cuda.empty_cache()
+            gc.collect()
 
 
 if __name__ == '__main__':
@@ -200,7 +213,6 @@ if __name__ == '__main__':
         hyp = yaml.load(f, Loader=yaml.SafeLoader)  # load hyps
 
     # Train
-    logger.info(opt)
     device = select_device(opt.device, batch_size=opt.batch_size)
 
     main(hyp, opt, device)

@@ -1,6 +1,35 @@
 import os
 import zipfile
 import shutil
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def remove_latest_exp(exp_name="exp"):
+    cwd = os.getcwd()
+    exp_path = os.path.join(cwd, "runs", "train", exp_name)
+    shutil.rmtree(path=exp_path, ignore_errors=True)
+
+
+def replace_model(exp_name="exp"):
+    cwd = os.getcwd()
+    model_path = os.path.join(
+        cwd, "runs", "train", exp_name, "weights", "best.pt"
+    )
+
+    target_path = os.path.join(cwd, "otm", "sent_model", "yolov7.pt")
+    base_weights_path = os.path.join(cwd, "otm", "base_weights", "yolov7.pt")
+    # remove the old model file
+    os.remove(target_path)
+    os.remove(base_weights_path)
+    shutil.copy(model_path, target_path)
+    shutil.move(model_path, base_weights_path)
+
+
+def arrange_model_files_after_training(exp_name="exp"):
+    replace_model(exp_name)
+    remove_latest_exp(exp_name)
 
 
 def zip_to_ims(zip_name, target_dir_name, temp_dir_name="temp_unzip_dir"):
@@ -55,9 +84,9 @@ class Unzipper:
         with zipfile.ZipFile(self.zip_file, 'r') as zip_ref:
             try:
                 zip_ref.extractall(self.output_folder)
-                print(f"Model file is extracted to: {self.output_folder}")
+                logger.info(f"Ims and labels file is extracted to: {self.output_folder}")
             except Exception as e:
-                print(f"Error occurred {e}")
+                logger.error(f"Error occurred {e}")
 
 
 if __name__ == "__main__":
