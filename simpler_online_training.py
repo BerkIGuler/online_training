@@ -17,36 +17,37 @@ from otm.file_operations import zip_to_ims
 
 logger = logging.getLogger(__name__)
 
+# hard-coded variables
 RECEIVE_FILE_NAME = "received.zip"
-MODEL_SENT_PATH = "./otm/sent_model"
-TARGET_PATH = "otm/incoming_folder"
+MODEL_SENT_PATH = "./otm/sent_model"  # which model to sent to remote
+TARGET_PATH = "otm/incoming_folder"  # where to save received imgs and labels
 
 
 def online_training(hyp, opt, device):
     """
-
     :param hyp: hyperparameters yaml path
     :param opt: args NameSpace for parsed cli arguments
     :param device: cuda device id
     :return:
     """
 
-    dataset_dir = opt.memory_path
+    dataset_dir = opt.memory_path  # previous dataset path
     incoming_dir = opt.stream_path
-    temp_dir = opt.temp_path  # used for training
+    temp_dir = opt.temp_path  # temporarily used during training
     replay_file_nb = opt.replay_sample_nb  # num samples to select from memory
+    # if more imgs than threshold in incoming_dir start training
     threshold = opt.threshold
 
+    # assumes same files are also in imgs
     files_list = [f for f in os.listdir(incoming_dir + "/labels")]
     # Get the count of files in the directory
     files_count = len(files_list)
-    print(files_count)
 
     if files_count > threshold:
         print(f"starting training with {files_count} files.")
         file_copier_coco(incoming_dir, temp_dir)
         file_sampler_coco(dataset_dir, temp_dir, replay_file_nb)
-        final_model_path, _ = train(hyp, opt, device, tb_writer=None)
+        results = train(hyp, opt, device, tb_writer=None)
         file_mover_coco(incoming_dir, dataset_dir)
         folder_cleaner_coco(temp_dir)
 
@@ -78,50 +79,78 @@ if __name__ == '__main__':
         "-p", '--port', type=int,
         required=True,
         help="serving port")
+
     parser.add_argument(
         "-i", '--host_ip', type=str,
         required=True,
         help="serving ip")
+
     parser.add_argument(
         '--memory_path', type=str,
         default='./otm/custom_dataset/train')
+
     parser.add_argument(
         '--stream_path', type=str,
         default='./otm/incoming_folder')
+
     parser.add_argument(
         '--replay_sample_nb', type=int,
         default=100, help="give number of samples to use for replay")
-    parser.add_argument(
-        '--temp_path', type=str,
-        default='./otm/temp_folder')
+
     parser.add_argument(
         '--device', default='0',
         help='cuda device id')
+
     parser.add_argument(
         '--epochs', type=int,
-        default=300)
+        default=3)
+
     parser.add_argument(
         '--weights', type=str,
         default='/home/tubitak/Desktop/online_training/otm/base_weights/yolov7.pt',
         help='initial weights path')
+
     parser.add_argument(
         '--threshold', type=int, default=10,
         help='minimum file number to start training')
+
     parser.add_argument(
         '--batch_size', type=int,
         default=16, help='total batch size for all GPUs')
+
     parser.add_argument(
         '--total_batch_size', type=int,
         default=32, help='Total batch size')
+
     parser.add_argument(
         '--img-size', nargs='+', type=int,
         default=[640, 640], help='[train, test] image sizes')
-    parser.add_argument('--hyp', type=str,
-                        default='data/hyp.scratch.p5.yaml',
-                        help='hyperparameters path')
 
-    parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
-    parser.add_argument('--data', type=str, default='data/coco.yaml', help='data.yaml path')
+    parser.add_argument(
+        '--hyp', type=str,
+        default='data/hyp.scratch.p5.yaml',
+        help='hyperparameters path')
+
+    parser.add_argument(
+        '--temp_path', type=str,
+        default='./otm/temp_folder',
+        help="temp directory for training")
+
+    parser.add_argument(
+        '--cfg', type=str,
+        default='cfg/training/yolov7.yaml',
+        help='model.yaml path')
+
+    parser.add_argument(
+        '--data', type=str,
+        default='data/online.yaml',
+        help='data.yaml path')
+
+    parser.add_argument(
+        '--patience', type=int,
+        default=2,
+        help='patience hyperparameter for early stopping')
+
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')

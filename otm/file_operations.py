@@ -33,9 +33,11 @@ def temp_to_ims(temp_path, target_folder_path):
     for file in os.listdir(inside_zip + "/images"):
         img_path = os.path.join(inside_zip + "/images/" + file)
         label_path = os.path.join(inside_zip + "/labels/" + file.replace("jpg", "txt"))
-        shutil.move(img_path, target_folder_path + '/images')
-        shutil.move(label_path, target_folder_path + '/labels')
-
+        try:
+            shutil.move(img_path, target_folder_path + '/images')
+            shutil.move(label_path, target_folder_path + '/labels')
+        except shutil.Error:
+            continue
     # rm temp folder
     shutil.rmtree(temp_path, ignore_errors=True)  # rm
 
@@ -59,4 +61,5 @@ class Unzipper:
 
 
 if __name__ == "__main__":
+    # dumb testing
     zip_to_ims("received.zip", "incoming_folder", temp_dir_name="temp_unzip_dir")
